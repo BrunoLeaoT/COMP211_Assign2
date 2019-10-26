@@ -112,6 +112,9 @@ public class Receiver extends NetworkHost
     // packet that was sent from the sender.
     protected void Input(Packet packet)
     {
+		deliverData(packet.getPayload(););
+		//Packet response = new Packet(seq,ack,check);
+		//udtSend(response);
     }
     
 
@@ -122,6 +125,70 @@ public class Receiver extends NetworkHost
     // of the receiver).
     protected void Init()
     {
+		int state = 0;
     }
+	
+    private int creatingChecksum(int ackNum, int seqNum, String message){
+        String result = addBinary(Integer.toString(ackNum), Integer.toString(seqNum));
+        result =  addBinary(result, message);
+        System.out.println(result);
+        result = onesComplement(result);
+		int checkSum = 0;
+        try {
+        	checkSum =Integer.parseInt(result);
+       }catch (NumberFormatException e){
+           System.out.println("not a number"); 
+       } 
+        System.out.println(checkSum);
+		return checkSum;  
+
+    }
+    
+    public String addBinary(String a, String b) 
+    { 
+          
+        // Initialize result 
+        String result = "";  
+          
+        // Initialize digit sum 
+        int s = 0;          
+  
+        // Traverse both strings starting  
+        // from last characters 
+        int i = a.length() - 1, j = b.length() - 1; 
+        while (i >= 0 || j >= 0 || s == 1) 
+        { 
+              
+            // Comput sum of last  
+            // digits and carry 
+            s += ((i >= 0)? a.charAt(i) - '0': 0); 
+            s += ((j >= 0)? b.charAt(j) - '0': 0); 
+  
+            // If current digit sum is  
+            // 1 or 3, add 1 to result 
+            result = (char)(s % 2 + '0') + result; 
+  
+            // Compute carry 
+            s /= 2; 
+  
+            // Move to next digits 
+            i--; j--; 
+        } 
+          
+    return result; 
+    }
+	
+	public static String onesComplement(String a){
+		
+		String ones = "";
+		// For ones complement flip every bit 
+        for (int i = 0; i < a.length(); i++) 
+        { 
+			char ch = a.charAt(i);
+            ones += (ch == '0') ? '1' : '0'; 
+        } 
+		return ones;
+	}	
+
 
 }

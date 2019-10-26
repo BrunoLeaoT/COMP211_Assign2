@@ -111,6 +111,7 @@ public class Sender extends NetworkHost
     // the receiving application layer.
     protected void Output(Message message)
     {
+		System.out.println("it got to sender");
     }
     
     // This routine will be called whenever a packet sent from the receiver 
@@ -141,15 +142,16 @@ public class Sender extends NetworkHost
         String result = addBinary(Integer.toString(ackNum), Integer.toString(seqNum));
         result =  addBinary(result, message);
         System.out.println(result);
-        int resultInt = 0;
+        result = onesComplement(result);
+		int checkSum = 0;
         try {
-        	resultInt=Integer.parseInt(result);
+        	checkSum =Integer.parseInt(result);
        }catch (NumberFormatException e){
            System.out.println("not a number"); 
        } 
-        System.out.println(resultInt);
-        int checkSum = ~resultInt;
-        return checkSum;
+        System.out.println(checkSum);
+		return checkSum;  
+
     }
     
     public String addBinary(String a, String b) 
@@ -184,6 +186,18 @@ public class Sender extends NetworkHost
         } 
           
     return result; 
-    } 
+    }
+	
+	public static String onesComplement(String a){
+		
+		String ones = "";
+		// For ones complement flip every bit 
+        for (int i = 0; i < a.length(); i++) 
+        { 
+			char ch = a.charAt(i);
+            ones += (ch == '0') ? '1' : '0'; 
+        } 
+		return ones;
+	}	
 
 }
