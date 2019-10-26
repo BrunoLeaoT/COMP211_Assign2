@@ -91,7 +91,10 @@ public class Receiver extends NetworkHost
 
     // Add any necessary class variables here. They can hold
     // state information for the receiver.
-    
+    int state = 0;
+	int initcheckSum = 0;
+	
+	
     // Also add any necessary methods (e.g. checksum of a String)
 
     // This is the constructor.  Don't touch!
@@ -112,9 +115,29 @@ public class Receiver extends NetworkHost
     // packet that was sent from the sender.
     protected void Input(Packet packet)
     {
-		deliverData(packet.getPayload(););
-		//Packet response = new Packet(seq,ack,check);
-		//udtSend(response);
+		
+		int checkSum = creatingChecksum(packet.getSeqnum(), packet.getPayload());
+		boolean noncorrupted = (checkSum == packet.getChecksum());
+		
+		if(noncorrupted && packet.getSeqnum() == state){
+			
+			deliverData(packet.getPayload());
+			Packet response = new Packet(state,state,checkSum);
+			udtSend(response);
+			
+			//switch state
+			if(state == 1){
+				state = 0;
+			}				
+			else if(state == 0){
+				state = 1;
+			}
+			initcheckSum = checkSum;
+		}
+		else if(packet.getSeqnum != state){
+			//udtSend(packet);
+		}
+		
     }
     
 
@@ -126,11 +149,12 @@ public class Receiver extends NetworkHost
     protected void Init()
     {
 		int state = 0;
+		int initcheckSum = 0;
     }
 	
-    private int creatingChecksum(int ackNum, int seqNum, String message){
-        String result = addBinary(Integer.toString(ackNum), Integer.toString(seqNum));
-        result =  addBinary(result, message);
+	
+    private int creatingChecksum(int seqNum, String message){
+        String result = addBinary(Integer.toString(seqNum), message);
         System.out.println(result);
         result = onesComplement(result);
 		int checkSum = 0;
