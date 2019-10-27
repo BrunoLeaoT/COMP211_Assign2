@@ -133,6 +133,7 @@ public class Sender extends NetworkHost
         lastPacketSent = senderPacket;
         udtSend(senderPacket);
         startTimer(200);
+        
     }
     
     // This routine will be called whenever a packet sent from the receiver 
@@ -156,22 +157,22 @@ public class Sender extends NetworkHost
 		
         if(packet.getAcknum() != lastSeqNum){ // This is supposed to be when its not ok the ack, so send it again
             System.out.println("ack not right");
-            stopTimer()
+            stopTimer();
             udtSend(lastPacketSent);
             startTimer(200);
         } 
         else{ // When the ackNum is okay, but still need to check for corruption
-			System.out.println("ack ok");
+            System.out.println("ack ok");
             if(noncorrupted == false){ // If its corrupted send again
                 System.out.println("response corrupt"); // it all goes wrong here
                 stopTimer();
                 udtSend(lastPacketSent);
                 startTimer(200);
             }
-			else{
-				System.out.println("try to stop timer, message was fine");
-				stopTimer();
-			}
+            else{
+                System.out.println("try to stop timer, message was fine");
+                stopTimer();
+            }
         }
     }
     
@@ -181,9 +182,10 @@ public class Sender extends NetworkHost
     // stopTimer(), above, for how the timer is started and stopped. 
     protected void TimerInterrupt()
     {
-        System.out.println("interrupt");
-        udtSend(lastPacketSent);
-        startTimer(200);
+		System.out.println("interrupt - send again");
+		udtSend(lastPacketSent);
+		startTimer(200);
+		
     }
     
     // This routine will be called once, before any of your other sender-side 
