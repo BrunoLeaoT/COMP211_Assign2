@@ -126,7 +126,7 @@ public class Receiver extends NetworkHost
 			ackNum = lastAckNum;
 		}
 		
-		int checkSum = creatingChecksum(packet.getSeqnum(), packet.getPayload());
+		int checkSum = creatingChecksum(packet.getAcknum(), packet.getSeqnum(), packet.getPayload());
 		boolean noncorrupted;
 		if(checkSum == packet.getChecksum()){
 			noncorrupted = true;
@@ -139,14 +139,15 @@ public class Receiver extends NetworkHost
 		if(noncorrupted == true && packet.getSeqnum() == lastAckNum){
 			
 			if(checkSum == lastChecksum){
-				//System.out.println("duplicate message sending response");
-				//Packet response = new Packet(packet.getSeqnum(),ackNum,checkSum);
-				//udtSend(response);
+				System.out.println("duplicate message sending response");
+				Packet response = new Packet(packet.getSeqnum(),ackNum,checkSum);
+				udtSend(response);
 			}
 			else{
 				deliverData(packet.getPayload());
 				System.out.println("delivered");
-				Packet response = new Packet(packet.getSeqnum(),ackNum,checkSum, packet.getPayload());
+				int newcheckSum = creatingChecksum(ackNum, packet.getSeqnum(), packet.getPayload());
+				Packet response = new Packet(packet.getSeqnum(),ackNum,newcheckSum, packet.getPayload());
 				System.out.println("sending response");
 				udtSend(response);
 			}
@@ -157,7 +158,7 @@ public class Receiver extends NetworkHost
 
 		}
 		else{
-			System.out.println("something happened");
+			System.out.println("corrupted or wrong message");
 			udtSend(packet);
 		}
 		
@@ -174,8 +175,9 @@ public class Receiver extends NetworkHost
     }
 	
 	
-    private int creatingChecksum(int seqNum, String message){
-        String result = addBinary(Integer.toString(seqNum), message);
+    private int creatingChecksum(int ackNum, int seqNum, String message){
+        String result = addBinary(Integer.toString(seqNum), Integer.toString(ackNum));
+		result = addBinary(result,message);
         result = onesComplement(result);
 		int checkSum = 0;
         try {

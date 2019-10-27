@@ -127,12 +127,12 @@ public class Sender extends NetworkHost
 			seqNum = lastSeqNum;
 			ackNum = 0;
 		}
-        int checkSum = creatingChecksum(seqNum, message.getData());
+        int checkSum = creatingChecksum(ackNum, seqNum, message.getData());
 		//send with an ackNum of the opposite of the sequence so if the packet is sent back it is not seen as a correct response and we can work with it
         Packet senderPacket = new Packet(seqNum,ackNum,checkSum, message.getData());
         lastPacketSent = senderPacket;
         udtSend(senderPacket);
-        startTimer(200000);
+        startTimer(200);
         
     }
     
@@ -144,7 +144,7 @@ public class Sender extends NetworkHost
     {
         System.out.println("Received ack packet with ack:" + packet.getAcknum());
 		
-		int checkSum = creatingChecksum(packet.getSeqnum(), packet.getPayload());
+		int checkSum = creatingChecksum(packet.getAcknum(), packet.getSeqnum(), packet.getPayload());
 		boolean noncorrupted;
 		if(checkSum == packet.getChecksum()){
 			noncorrupted = true;
@@ -189,8 +189,9 @@ public class Sender extends NetworkHost
     {
     }
 
-    private int creatingChecksum(int seqNum, String message){
-        String result = addBinary(message, Integer.toString(seqNum));
+    private int creatingChecksum(int ackNum, int seqNum, String message){
+        String result = addBinary(Integer.toString(seqNum), Integer.toString(ackNum));
+		result = addBinary(result,message);
         result = onesComplement(result);
 		int checkSum = 0;
         try {
