@@ -139,14 +139,14 @@ public class Receiver extends NetworkHost
 		if(noncorrupted == true && packet.getSeqnum() == lastAckNum){
 			
 			if(checkSum == lastChecksum){
-				System.out.println("duplicate message sending response");
-				Packet response = new Packet(packet.getSeqnum(),ackNum,checkSum);
-				udtSend(response);
+				//System.out.println("duplicate message sending response");
+				//Packet response = new Packet(packet.getSeqnum(),ackNum,checkSum);
+				//udtSend(response);
 			}
 			else{
 				deliverData(packet.getPayload());
 				System.out.println("delivered");
-				Packet response = new Packet(packet.getSeqnum(),ackNum,checkSum);
+				Packet response = new Packet(packet.getSeqnum(),ackNum,checkSum, packet.getPayload());
 				System.out.println("sending response");
 				udtSend(response);
 			}

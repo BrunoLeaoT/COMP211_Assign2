@@ -144,14 +144,24 @@ public class Sender extends NetworkHost
     {
         System.out.println("Received ack packet with ack:" + packet.getAcknum());
 		
+		int checkSum = creatingChecksum(packet.getSeqnum(), packet.getPayload());
+		boolean noncorrupted;
+		if(checkSum == packet.getChecksum()){
+			noncorrupted = true;
+		}
+		else{
+			noncorrupted = false;
+			System.out.println("message corrupted");
+		}
+		
+		
         if(packet.getAcknum() != lastSeqNum){ // This is supposed to be when its not ok the ack, so send it again
 			System.out.println("ack not right");
             udtSend(lastPacketSent);
         } 
         else{ // When the ackNum is okay, but still need to check for corruption
 			System.out.println("ack ok");
-            int checkSumReceived = creatingChecksum(packet.getSeqnum(), packet.getPayload());
-            if(checkSumReceived != packet.getChecksum()){ // If its corrupted send again
+            if(noncorrupted == false){ // If its corrupted send again
 				System.out.println("response corrupt"); // it all goes wrong here
                 udtSend(lastPacketSent);
             }
