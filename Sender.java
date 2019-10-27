@@ -10,7 +10,6 @@ public class Sender extends NetworkHost
 
 {
     private int lastSeqNum = 1;
-    private int ackNum = 0;
     private Packet lastPacketSent;
     /*
      * Predefined Constant (static member variables):
@@ -114,21 +113,24 @@ public class Sender extends NetworkHost
     // the receiving application layer.
     protected void Output(Message message)
     {
-		System.out.println("it gets into sender");
 		int seqNum;
+		int ackNum;
         if(lastSeqNum == 1){
             lastSeqNum = 0;
 			seqNum = lastSeqNum;
+			ackNum = 1;
 		}
         else{
             lastSeqNum = 1;
 			seqNum = lastSeqNum;
+			ackNum = 0;
 		}
         int checkSum = creatingChecksum(ackNum, seqNum, message.getData());
-        Packet senderPacket = new Packet(seqNum, ackNum,checkSum, message.getData());
+		//send with an ackNum of the opposite of the sequence so if the packet is sent back it is not seen as a correct response and we can work with it
+        Packet senderPacket = new Packet(seqNum,ackNum,checkSum, message.getData());
         lastPacketSent = senderPacket;
         udtSend(senderPacket);
-        //startTimer(20);
+        startTimer(20);
         
     }
     
@@ -138,19 +140,17 @@ public class Sender extends NetworkHost
     // that was sent from the receiver.
     protected void Input(Packet packet)
     {
-        //if(packet.getSeqnum == lastSeqNum)
-        //  stopTimer();
+
         System.out.println("Received ack packet with ack:" + packet.getAcknum());
         if(packet.getAcknum() != lastSeqNum){ // This is supposed to be when its not ok the ack, so send it again
             udtSend(lastPacketSent);
         } 
         else{ // When the ackNum is okay, but still need to check for corruption
             int checkSumReceived = creatingChecksum(packet.getAcknum(),packet.getSeqnum(), packet.getPayload());
-            int checkSumLastPacketSent =  creatingChecksum(lastPacketSent.getAcknum(), lastPacketSent.getSeqnum(), lastPacketSent.getPayload());
-            if(checkSumReceived != checkSumLastPacketSent){ // If its corrupted send again
+            if(checkSumReceived != packet.getChecksum()){ // If its corrupted send again
                 udtSend(lastPacketSent);
             }
-            //Else don't do nothing (?)
+            stopTimer();
         }
     }
     
@@ -160,7 +160,7 @@ public class Sender extends NetworkHost
     // stopTimer(), above, for how the timer is started and stopped. 
     protected void TimerInterrupt()
     {
-
+		System.out.println("interrupt");
     }
     
     // This routine will be called once, before any of your other sender-side 
@@ -174,7 +174,6 @@ public class Sender extends NetworkHost
     private int creatingChecksum(int ackNum, int seqNum, String message){
         String result = addBinary(Integer.toString(ackNum), Integer.toString(seqNum));
         result =  addBinary(result, message);
-        System.out.println(result);
         result = onesComplement(result);
 		int checkSum = 0;
         try {
@@ -182,7 +181,6 @@ public class Sender extends NetworkHost
        }catch (NumberFormatException e){
            System.out.println("not a number"); 
        } 
-        System.out.println(checkSum);
 		return checkSum;  
 
     }

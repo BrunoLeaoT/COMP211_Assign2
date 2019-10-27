@@ -91,10 +91,8 @@ public class Receiver extends NetworkHost
 
     // Add any necessary class variables here. They can hold
     // state information for the receiver.
-    private int lastSeqNum = 1;
-    private int ackNum = 0;
-    private Packet lastPacketSent;
-	private int lastCheckSum = 0;
+    private int lastAckNum = 0;
+    private Packet lastPacketGot;
 	
 	
     // Also add any necessary methods (e.g. checksum of a String)
@@ -117,26 +115,38 @@ public class Receiver extends NetworkHost
     // packet that was sent from the sender.
     protected void Input(Packet packet)
     {
+		int ackNum;
+        if(lastAckNum == 1){
+            lastAckNum = 0;
+			ackNum = lastAckNum;
+		}
+        else{
+            lastAckNum = 1;
+			ackNum = lastAckNum;
+		}
 		
 		int checkSum = creatingChecksum(packet.getSeqnum(), packet.getPayload());
 		boolean noncorrupted = (checkSum == packet.getChecksum());
 		
-		if(noncorrupted && packet.getSeqnum() == lastSeqNum){
+		if(noncorrupted && packet.getSeqnum() == lastAckNum){
 			
-			deliverData(packet.getPayload());
-			Packet response = new Packet(lastSeqNum,ackNum,checkSum);
-			udtSend(response);
-			
-			//switch state
-			if(lastSeqNum == 1){
-				lastSeqNum = 0;
-			}				
-			else{
-				lastSeqNum = 1;
+			if(checkSum == lastPacketGot.getChecksum()){
+				Packet response = new Packet(packet.getSeqnum(),ackNum,checkSum);
+				System.out.println("sending response");
+				udtSend(response);
 			}
-			lastCheckSum = checkSum;
+			else{
+				deliverData(packet.getPayload());
+				Packet response = new Packet(packet.getSeqnum(),ackNum,checkSum);
+				System.out.println("sending response");
+				udtSend(response);
+			}
+			lastPacketGot = packet;
+			
+			
+
 		}
-		else if (packet.getSeqnum() != lastSeqNum){
+		else{
 			udtSend(packet);
 		}
 		
@@ -155,7 +165,6 @@ public class Receiver extends NetworkHost
 	
     private int creatingChecksum(int seqNum, String message){
         String result = addBinary(Integer.toString(seqNum), message);
-        System.out.println(result);
         result = onesComplement(result);
 		int checkSum = 0;
         try {
@@ -163,7 +172,6 @@ public class Receiver extends NetworkHost
        }catch (NumberFormatException e){
            System.out.println("not a number"); 
        } 
-        System.out.println(checkSum);
 		return checkSum;  
 
     }
