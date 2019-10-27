@@ -1,7 +1,7 @@
 /*************************************
  * Filename:  Sender.java
- * Names:
- * Student-IDs:
+ * Names: Bruno Teixeira and Matt
+ * Student-IDs: 201445705 and
  * Date:
  *************************************/
 import java.util.Random;
@@ -9,6 +9,9 @@ import java.util.Random;
 public class Sender extends NetworkHost
 
 {
+    private int lastSeqNum = 1;
+    private int ackNum = 0;
+    private Packet lastPacketSent;
     /*
      * Predefined Constant (static member variables):
      *
@@ -111,7 +114,17 @@ public class Sender extends NetworkHost
     // the receiving application layer.
     protected void Output(Message message)
     {
-		System.out.println("it got to sender");
+        if(lastSeqNum == 1)
+            lastSeqNum = 0;
+        else
+            lastSeqNum = 1;
+        int checksum = creatingChecksum(ackNum, seqNum, message);
+        Packet senderPacket = new Packet(seqNum, ackNum,checkSum, message );
+        lastPacketSent = senderPacket;
+        udtSend(senderPacket);
+        //startTimer(20);
+        System.out.println("it got to sender");
+        
     }
     
     // This routine will be called whenever a packet sent from the receiver 
@@ -120,6 +133,20 @@ public class Sender extends NetworkHost
     // that was sent from the receiver.
     protected void Input(Packet packet)
     {
+        //if(packet.seqNum == lastSeqNum)
+        //  stopTimer();
+        System.out.println("Received ack packet with number: " + packet.seqNum + "And ack:" + packet.ackNum);
+        if(!packet.ackNum){ // This is supposed to be when its not ok the ack, so send it again
+            udtSend(lastPacketSent);
+        } 
+        else{ // When the ackNum is okay, but still need to check for corruption
+            int checkSumReceived = creatingChecksum(packet.ackNum, packet.seqNum, packet.payload);
+            int checkSumLastPacketSent =  creatingChecksum(lastPacketSent.ackNum, lastPacketSent.seqNum, lastPacketSent.payload);
+            if( !checkSumReceived == checkSumLastPacketSent){ // If its corrupted send again
+                udtSend(lastPacketSent);
+            }
+            //Else don't do nothing (?)
+        }
     }
     
     // This routine will be called when the senders's timer expires (thus 
@@ -128,6 +155,7 @@ public class Sender extends NetworkHost
     // stopTimer(), above, for how the timer is started and stopped. 
     protected void TimerInterrupt()
     {
+
     }
     
     // This routine will be called once, before any of your other sender-side 
