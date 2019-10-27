@@ -1,7 +1,7 @@
 /*************************************
  * Filename:  Sender.java
- * Names: Bruno Teixeira and Matt
- * Student-IDs: 201445705 and
+ * Names: Bruno Teixeira and Matt Page
+ * Student-IDs: 201445705 and 201329303
  * Date:
  *************************************/
 import java.util.Random;
@@ -114,16 +114,21 @@ public class Sender extends NetworkHost
     // the receiving application layer.
     protected void Output(Message message)
     {
-        if(lastSeqNum == 1)
+		System.out.println("it gets into sender");
+		int seqNum;
+        if(lastSeqNum == 1){
             lastSeqNum = 0;
-        else
+			seqNum = lastSeqNum;
+		}
+        else{
             lastSeqNum = 1;
-        int checksum = creatingChecksum(ackNum, seqNum, message);
-        Packet senderPacket = new Packet(seqNum, ackNum,checkSum, message );
+			seqNum = lastSeqNum;
+		}
+        int checkSum = creatingChecksum(ackNum, seqNum, message.getData());
+        Packet senderPacket = new Packet(seqNum, ackNum,checkSum, message.getData());
         lastPacketSent = senderPacket;
         udtSend(senderPacket);
         //startTimer(20);
-        System.out.println("it got to sender");
         
     }
     
@@ -133,16 +138,16 @@ public class Sender extends NetworkHost
     // that was sent from the receiver.
     protected void Input(Packet packet)
     {
-        //if(packet.seqNum == lastSeqNum)
+        //if(packet.getSeqnum == lastSeqNum)
         //  stopTimer();
-        System.out.println("Received ack packet with number: " + packet.seqNum + "And ack:" + packet.ackNum);
-        if(!packet.ackNum){ // This is supposed to be when its not ok the ack, so send it again
+        System.out.println("Received ack packet with ack:" + packet.getAcknum());
+        if(packet.getAcknum() != lastSeqNum){ // This is supposed to be when its not ok the ack, so send it again
             udtSend(lastPacketSent);
         } 
         else{ // When the ackNum is okay, but still need to check for corruption
-            int checkSumReceived = creatingChecksum(packet.ackNum, packet.seqNum, packet.payload);
-            int checkSumLastPacketSent =  creatingChecksum(lastPacketSent.ackNum, lastPacketSent.seqNum, lastPacketSent.payload);
-            if( !checkSumReceived == checkSumLastPacketSent){ // If its corrupted send again
+            int checkSumReceived = creatingChecksum(packet.getAcknum(),packet.getSeqnum(), packet.getPayload());
+            int checkSumLastPacketSent =  creatingChecksum(lastPacketSent.getAcknum(), lastPacketSent.getSeqnum(), lastPacketSent.getPayload());
+            if(checkSumReceived != checkSumLastPacketSent){ // If its corrupted send again
                 udtSend(lastPacketSent);
             }
             //Else don't do nothing (?)

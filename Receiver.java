@@ -1,7 +1,7 @@
 /*************************************
  * Filename:  Receiver.java
- * Names:
- * Student-IDs:
+ * Names: Bruno Teixeira and Matt Page
+ * Student-IDs: 201445705 and 201329303
  * Date:
  *************************************/
 import java.util.Random;
@@ -91,8 +91,10 @@ public class Receiver extends NetworkHost
 
     // Add any necessary class variables here. They can hold
     // state information for the receiver.
-    int state = 0;
-	int initcheckSum = 0;
+    private int lastSeqNum = 1;
+    private int ackNum = 0;
+    private Packet lastPacketSent;
+	private int lastCheckSum = 0;
 	
 	
     // Also add any necessary methods (e.g. checksum of a String)
@@ -119,23 +121,23 @@ public class Receiver extends NetworkHost
 		int checkSum = creatingChecksum(packet.getSeqnum(), packet.getPayload());
 		boolean noncorrupted = (checkSum == packet.getChecksum());
 		
-		if(noncorrupted && packet.getSeqnum() == state){
+		if(noncorrupted && packet.getSeqnum() == lastSeqNum){
 			
 			deliverData(packet.getPayload());
-			Packet response = new Packet(state,state,checkSum);
+			Packet response = new Packet(lastSeqNum,ackNum,checkSum);
 			udtSend(response);
 			
 			//switch state
-			if(state == 1){
-				state = 0;
+			if(lastSeqNum == 1){
+				lastSeqNum = 0;
 			}				
-			else if(state == 0){
-				state = 1;
+			else{
+				lastSeqNum = 1;
 			}
-			initcheckSum = checkSum;
+			lastCheckSum = checkSum;
 		}
-		else if(packet.getSeqnum != state){
-			//udtSend(packet);
+		else if (packet.getSeqnum() != lastSeqNum){
+			udtSend(packet);
 		}
 		
     }
@@ -148,8 +150,6 @@ public class Receiver extends NetworkHost
     // of the receiver).
     protected void Init()
     {
-		int state = 0;
-		int initcheckSum = 0;
     }
 	
 	
