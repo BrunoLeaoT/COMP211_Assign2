@@ -91,9 +91,9 @@ public class Receiver extends NetworkHost
 
     // Add any necessary class variables here. They can hold
     // state information for the receiver.
-    private int lastAckNum = 0;
+    private int lastAckNum = 1;
     private Packet lastPacketGot;
-	
+	private int lastChecksum = 0;
 	
     // Also add any necessary methods (e.g. checksum of a String)
 
@@ -115,6 +115,7 @@ public class Receiver extends NetworkHost
     // packet that was sent from the sender.
     protected void Input(Packet packet)
     {
+		System.out.println("messages received");
 		int ackNum;
         if(lastAckNum == 1){
             lastAckNum = 0;
@@ -126,27 +127,37 @@ public class Receiver extends NetworkHost
 		}
 		
 		int checkSum = creatingChecksum(packet.getSeqnum(), packet.getPayload());
-		boolean noncorrupted = (checkSum == packet.getChecksum());
+		boolean noncorrupted;
+		if(checkSum == packet.getChecksum()){
+			noncorrupted = true;
+		}
+		else{
+			noncorrupted = false;
+			System.out.println("message corrupted");
+		}
 		
-		if(noncorrupted && packet.getSeqnum() == lastAckNum){
+		if(noncorrupted == true && packet.getSeqnum() == lastAckNum){
 			
-			if(checkSum == lastPacketGot.getChecksum()){
+			if(checkSum == lastChecksum){
+				System.out.println("duplicate message sending response");
 				Packet response = new Packet(packet.getSeqnum(),ackNum,checkSum);
-				System.out.println("sending response");
 				udtSend(response);
 			}
 			else{
 				deliverData(packet.getPayload());
+				System.out.println("delivered");
 				Packet response = new Packet(packet.getSeqnum(),ackNum,checkSum);
 				System.out.println("sending response");
 				udtSend(response);
 			}
 			lastPacketGot = packet;
+			lastChecksum = packet.getChecksum();
 			
 			
 
 		}
 		else{
+			System.out.println("something happened");
 			udtSend(packet);
 		}
 		
