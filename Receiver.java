@@ -115,7 +115,8 @@ public class Receiver extends NetworkHost
     // packet that was sent from the sender.
     protected void Input(Packet packet)
     {
-		System.out.println("messages received");
+		//set up ack number as the seq number we expect and then use the ack to send back to the sender
+		//switch the numbers from the last time the method was called
 		int ackNum;
         if(lastAckNum == 1){
             lastAckNum = 0;
@@ -125,7 +126,7 @@ public class Receiver extends NetworkHost
             lastAckNum = 1;
 			ackNum = lastAckNum;
 		}
-		
+		// calculate the checksum from the packet and compare it to the checksum variable in the packet to find if its corrupted
 		int checkSum = creatingChecksum(packet.getAcknum(), packet.getSeqnum(), packet.getPayload());
 		boolean noncorrupted;
 		if(checkSum == packet.getChecksum()){
@@ -133,32 +134,29 @@ public class Receiver extends NetworkHost
 		}
 		else{
 			noncorrupted = false;
-			System.out.println("message corrupted");
 		}
-		
+		//if its not corrupted
 		if(noncorrupted == true && packet.getSeqnum() == lastAckNum){
-			
+			// if its a duplicate packet
 			if(checkSum == lastChecksum){
-				System.out.println("duplicate message sending response");
 				Packet response = new Packet(packet.getSeqnum(),ackNum,checkSum);
 				udtSend(response);
 			}
+			// if its a new packet we havent received before and needs to be delivered
 			else{
 				deliverData(packet.getPayload());
-				System.out.println("delivered");
+				// create new packet to send to sender class
 				int newcheckSum = creatingChecksum(ackNum, packet.getSeqnum(), packet.getPayload());
 				Packet response = new Packet(packet.getSeqnum(),ackNum,newcheckSum, packet.getPayload());
-				System.out.println("sending response");
 				udtSend(response);
 			}
+			// store the packets just in case of duplication
 			lastPacketGot = packet;
 			lastChecksum = packet.getChecksum();
 			
-			
-
 		}
 		else{
-			System.out.println("corrupted or wrong message");
+			// if corrupted return the original packet back to the sender
 			udtSend(packet);
 		}
 		
@@ -174,7 +172,7 @@ public class Receiver extends NetworkHost
     {
     }
 	
-	
+	// method for creating the checksum out of the sequence number, ack number and the payload
     private int creatingChecksum(int ackNum, int seqNum, String message){
         String result = addBinary(Integer.toString(seqNum), Integer.toString(ackNum));
 		result = addBinary(result,message);
@@ -183,12 +181,12 @@ public class Receiver extends NetworkHost
         try {
         	checkSum =Integer.parseInt(result);
        }catch (NumberFormatException e){
-           System.out.println("not a number"); 
        } 
 		return checkSum;  
 
     }
-    
+	
+	//method for adding binary numbers together
     public String addBinary(String a, String b) 
     { 
           
@@ -223,6 +221,7 @@ public class Receiver extends NetworkHost
     return result; 
     }
 	
+	//method for getting the ones complement of a binary number
 	public static String onesComplement(String a){
 		
 		String ones = "";

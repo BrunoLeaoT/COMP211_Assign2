@@ -115,8 +115,10 @@ public class Sender extends NetworkHost
     // the receiving application layer.
     protected void Output(Message message)
     {
+		//set up sequence number and a intial ack number to send to the receiver
 		int seqNum;
 		int ackNum;
+		//switch the numbers from the last time the method was called
         if(lastSeqNum == 1){
             lastSeqNum = 0;
 			seqNum = lastSeqNum;
@@ -127,10 +129,13 @@ public class Sender extends NetworkHost
 			seqNum = lastSeqNum;
 			ackNum = 0;
 		}
+		//create checksum
         int checkSum = creatingChecksum(ackNum, seqNum, message.getData());
 		//send with an ackNum of the opposite of the sequence so if the packet is sent back it is not seen as a correct response and we can work with it
         Packet senderPacket = new Packet(seqNum,ackNum,checkSum, message.getData());
+		//store the last sent packet so we can send it again if needed
         lastPacketSent = senderPacket;
+		//send the packet to the receiver and start the timers
         udtSend(senderPacket);
         startTimer(200);
         
@@ -142,8 +147,7 @@ public class Sender extends NetworkHost
     // that was sent from the receiver.
     protected void Input(Packet packet)
     {
-        System.out.println("Received ack packet with ack:" + packet.getAcknum());
-		
+		//work out the checksum for the incoming packet and check it against the checksum value in the packet to see if its corrupted
 		int checkSum = creatingChecksum(packet.getAcknum(), packet.getSeqnum(), packet.getPayload());
 		boolean noncorrupted;
 		if(checkSum == packet.getChecksum()){
@@ -151,26 +155,21 @@ public class Sender extends NetworkHost
 		}
 		else{
 			noncorrupted = false;
-			System.out.println("message corrupted");
 		}
 		
-		
-        if(packet.getAcknum() != lastSeqNum){ // This is supposed to be when its not ok the ack, so send it again
-            System.out.println("ack not right");
+		// This is supposed to be when its not the ack we are expecting, so send it again and restart the timers
+        if(packet.getAcknum() != lastSeqNum){ 
             stopTimer();
             udtSend(lastPacketSent);
             startTimer(200);
         } 
         else{ // When the ackNum is okay, but still need to check for corruption
-            System.out.println("ack ok");
-            if(noncorrupted == false){ // If its corrupted send again
-                System.out.println("response corrupt"); // it all goes wrong here
+            if(noncorrupted == false){ // If its corrupted send again and restart timers
                 stopTimer();
                 udtSend(lastPacketSent);
                 startTimer(200);
             }
-            else{
-                System.out.println("try to stop timer, message was fine");
+            else{ // this is when everything is fine and we can stop the timer
                 stopTimer();
             }
         }
@@ -182,7 +181,7 @@ public class Sender extends NetworkHost
     // stopTimer(), above, for how the timer is started and stopped. 
     protected void TimerInterrupt()
     {
-		System.out.println("interrupt - send again");
+		// resend the packet and restart the timer
 		udtSend(lastPacketSent);
 		startTimer(200);
 		
@@ -196,6 +195,7 @@ public class Sender extends NetworkHost
     {
     }
 
+	// method for creating the checksum out of the sequence number, ack number and the payload
     private int creatingChecksum(int ackNum, int seqNum, String message){
         String result = addBinary(Integer.toString(seqNum), Integer.toString(ackNum));
 		result = addBinary(result,message);
@@ -204,12 +204,12 @@ public class Sender extends NetworkHost
         try {
         	checkSum =Integer.parseInt(result);
        }catch (NumberFormatException e){
-           System.out.println("not a number"); 
        } 
 		return checkSum;  
 
     }
     
+	//method for adding binary numbers together
     public String addBinary(String a, String b) 
     { 
           
@@ -244,6 +244,7 @@ public class Sender extends NetworkHost
     return result; 
     }
 	
+	//method for getting the ones complement of a binary number
 	public static String onesComplement(String a){
 		
 		String ones = "";
